@@ -1,0 +1,86 @@
+@baseUrl = http://localhost:3000
+
+### 1) Registrar persona A
+# @name personaA
+POST {{baseUrl}}/usuarios
+Content-Type: application/json
+
+{
+  "nombre": "Ana Prueba",
+  "alias": "ana_test",
+  "email": "ana.test@ejemplo.com"
+}
+
+### 2) Registrar persona B
+# @name personaB
+POST {{baseUrl}}/usuarios
+Content-Type: application/json
+
+{
+  "nombre": "Bruno Prueba",
+  "alias": "bruno_test",
+  "email": "bruno.test@ejemplo.com"
+}
+
+### 3) Crear desafío (persona A)
+# @name crearDesafio
+POST {{baseUrl}}/desafios
+Content-Type: application/json
+x-usuario-id: {{personaA.response.body.id}}
+
+{
+  "nombre": "Desafío HTTP de prueba",
+  "descripcion": "Flujo Postman/REST Client",
+  "categoria": "BIENESTAR",
+  "fechaInicio": "2026-10-10",
+  "fechaFin": "2026-10-20",
+  "maxParticipantes": 4
+}
+
+### 4) Unirse con código (persona B)
+POST {{baseUrl}}/desafios/unirse
+Content-Type: application/json
+x-usuario-id: {{personaB.response.body.id}}
+
+{
+  "codigoInvitacion": "{{crearDesafio.response.body.codigoInvitacion}}"
+}
+
+### 5) Check-in (persona B) — ajustá `dia` a hoy (YYYY-MM-DD) si el desafío está ACTIVO
+POST {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/check-ins
+Content-Type: application/json
+x-usuario-id: {{personaB.response.body.id}}
+
+{
+  "dia": "2026-10-10",
+  "nota": "Listo",
+  "valor": 30
+}
+
+### 6) Deshacer último check-in (persona B)
+DELETE {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/check-ins/ultimo
+x-usuario-id: {{personaB.response.body.id}}
+
+### --- Errores esperados ---
+
+### E1) 409 — cupo completo (crear desafío con max 2 y unir 2 extras)
+# Ejecutar manualmente tras llenar cupo
+
+### E2) 403 — cancelar sin ser creador
+POST {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/cancelar
+x-usuario-id: {{personaB.response.body.id}}
+
+### E3) 400 — check-in en día no permitido (futuro)
+POST {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/check-ins
+Content-Type: application/json
+x-usuario-id: {{personaB.response.body.id}}
+
+{
+  "dia": "2099-01-01"
+}
+
+### Listar desafíos
+GET {{baseUrl}}/desafios
+
+### Listar desafíos por estado
+GET {{baseUrl}}/desafios?estado=PROGRAMADO&categoria=SALUD

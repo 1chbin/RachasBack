@@ -1,0 +1,448 @@
+{
+  "info": {
+    "_postman_id": "rachas-parte-1-api",
+    "name": "Rachas - Parte I (API)",
+    "description": "Flujo completo: 2 usuarios, desafío, unión, check-ins y casos de error.\n\n**Antes de correr:** levantá el back (`npm run start:dev`).\n\n**Orden:** ejecutá la carpeta «Flujo completo» de arriba hacia abajo (o Run collection). Las variables `usuarioAId`, `usuarioBId`, `desafioId`, `codigoInvitacion`, `diaHoy` y `fechaFinDesafio` se setean solas.\n\nAjustá `baseUrl` si usás otro puerto.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const tz = 'America/Argentina/Buenos_Aires';",
+          "function fechaCalendario(desplazamientoDias) {",
+          "  const instante = new Date(Date.now() + desplazamientoDias * 86400000);",
+          "  return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(instante);",
+          "}",
+          "pm.collectionVariables.set('diaHoy', fechaCalendario(0));",
+          "pm.collectionVariables.set('fechaFinDesafio', fechaCalendario(14));",
+          "const sufijo = Date.now().toString().slice(-6);",
+          "pm.collectionVariables.set('aliasA', 'ana_' + sufijo);",
+          "pm.collectionVariables.set('aliasB', 'bruno_' + sufijo);",
+          "pm.collectionVariables.set('emailA', 'ana.' + sufijo + '@ejemplo.com');",
+          "pm.collectionVariables.set('emailB', 'bruno.' + sufijo + '@ejemplo.com');"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "usuarioAId", "value": "" },
+    { "key": "usuarioBId", "value": "" },
+    { "key": "desafioId", "value": "" },
+    { "key": "codigoInvitacion", "value": "" },
+    { "key": "diaHoy", "value": "" },
+    { "key": "fechaFinDesafio", "value": "" },
+    { "key": "aliasA", "value": "" },
+    { "key": "aliasB", "value": "" },
+    { "key": "emailA", "value": "" },
+    { "key": "emailB", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Flujo completo",
+      "item": [
+        {
+          "name": "1 - Crear usuario A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 o 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('usuarioAId', body.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ana Postman\",\n  \"alias\": \"{{aliasA}}\",\n  \"email\": \"{{emailA}}\"\n}"
+            },
+            "url": "{{baseUrl}}/usuarios"
+          }
+        },
+        {
+          "name": "2 - Crear usuario B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 o 200', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "pm.collectionVariables.set('usuarioBId', pm.response.json().id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Bruno Postman\",\n  \"alias\": \"{{aliasB}}\",\n  \"email\": \"{{emailB}}\"\n}"
+            },
+            "url": "{{baseUrl}}/usuarios"
+          }
+        },
+        {
+          "name": "3 - Crear desafío (creador A, inicio hoy)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Desafío creado', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('desafioId', body.id);",
+                  "pm.collectionVariables.set('codigoInvitacion', body.codigoInvitacion);",
+                  "pm.test('Estado ACTIVO (inicio hoy)', function () {",
+                  "  pm.expect(body.estado).to.eql('ACTIVO');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{usuarioAId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Desafío Postman\",\n  \"descripcion\": \"Prueba Parte I\",\n  \"categoria\": \"SALUD\",\n  \"fechaInicio\": \"{{diaHoy}}\",\n  \"fechaFin\": \"{{fechaFinDesafio}}\",\n  \"maxParticipantes\": 10\n}"
+            },
+            "url": "{{baseUrl}}/desafios"
+          }
+        },
+        {
+          "name": "4 - B se une con código",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Unión exitosa', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{usuarioBId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoInvitacion\": \"{{codigoInvitacion}}\"\n}"
+            },
+            "url": "{{baseUrl}}/desafios/unirse"
+          }
+        },
+        {
+          "name": "5 - Listar participantes (participante A)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{usuarioAId}}" }],
+            "url": "{{baseUrl}}/desafios/{{desafioId}}/participantes"
+          }
+        },
+        {
+          "name": "5b - Detalle con código (participante A)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Incluye codigoInvitacion', function () {",
+                  "  pm.expect(pm.response.json().codigoInvitacion).to.be.a('string').and.not.empty;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{usuarioAId}}" }],
+            "url": "{{baseUrl}}/desafios/{{desafioId}}"
+          }
+        },
+        {
+          "name": "6 - Check-in usuario B (hoy)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Check-in registrado', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{usuarioBId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dia\": \"{{diaHoy}}\",\n  \"nota\": \"Listo\",\n  \"valor\": 30\n}"
+            },
+            "url": "{{baseUrl}}/desafios/{{desafioId}}/check-ins"
+          }
+        },
+        {
+          "name": "7 - Check-in usuario A (hoy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{usuarioAId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dia\": \"{{diaHoy}}\",\n  \"nota\": \"Hecho\",\n  \"valor\": 20\n}"
+            },
+            "url": "{{baseUrl}}/desafios/{{desafioId}}/check-ins"
+          }
+        },
+        {
+          "name": "8 - Listar check-ins de B",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/desafios/{{desafioId}}/check-ins?usuarioId={{usuarioBId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["desafios", "{{desafioId}}", "check-ins"],
+              "query": [{ "key": "usuarioId", "value": "{{usuarioBId}}" }]
+            }
+          }
+        },
+        {
+          "name": "9 - Deshacer último check-in de B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Check-in deshecho', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "x-usuario-id", "value": "{{usuarioBId}}" }],
+            "url": "{{baseUrl}}/desafios/{{desafioId}}/check-ins/ultimo"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Errores esperados (entrega)",
+      "item": [
+        {
+          "name": "E1 - 403 Cancelar sin ser creador (B)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('403 Forbidden', function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-usuario-id", "value": "{{usuarioBId}}" }],
+            "url": "{{baseUrl}}/desafios/{{desafioId}}/cancelar"
+          }
+        },
+        {
+          "name": "E2 - 400 Check-in día futuro",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{usuarioBId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dia\": \"2099-01-01\"\n}"
+            },
+            "url": "{{baseUrl}}/desafios/{{desafioId}}/check-ins"
+          }
+        },
+        {
+          "name": "E3 - 409 Check-in duplicado mismo día",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('409 Conflict', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{usuarioAId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dia\": \"{{diaHoy}}\"\n}"
+            },
+            "url": "{{baseUrl}}/desafios/{{desafioId}}/check-ins"
+          },
+          "description": "Ejecutá después del paso 7 del flujo (A ya hizo check-in hoy). Si falló el 7, este test no dará 409."
+        }
+      ],
+      "description": "Corré primero «Flujo completo». E3 asume que el usuario A ya tiene check-in de hoy."
+    },
+    {
+      "name": "Consultas útiles",
+      "item": [
+        {
+          "name": "GET Listar desafíos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const lista = pm.response.json();",
+                  "pm.test('Catálogo sin codigoInvitacion', function () {",
+                  "  if (Array.isArray(lista) && lista.length > 0) {",
+                  "    pm.expect(lista[0]).to.not.have.property('codigoInvitacion');",
+                  "  }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/desafios"
+          }
+        },
+        {
+          "name": "GET Desafíos con filtros",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/desafios?estado=ACTIVO&categoria=SALUD",
+              "host": ["{{baseUrl}}"],
+              "path": ["desafios"],
+              "query": [
+                { "key": "estado", "value": "ACTIVO" },
+                { "key": "categoria", "value": "SALUD" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET Detalle desafío (público, sin código)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/desafios/{{desafioId}}"
+          }
+        },
+        {
+          "name": "GET Detalle desafío (participante, con código)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{usuarioAId}}" }],
+            "url": "{{baseUrl}}/desafios/{{desafioId}}"
+          }
+        },
+        {
+          "name": "GET Desafíos de usuario A",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/usuarios/{{usuarioAId}}/desafios"
+          }
+        },
+        {
+          "name": "GET Listar todos los usuarios",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/usuarios"
+          }
+        },
+        {
+          "name": "GET Usuario A por id",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/usuarios/{{usuarioAId}}"
+          }
+        },
+        {
+          "name": "PATCH Actualizar nombre A",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{usuarioAId}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ana Actualizada\"\n}"
+            },
+            "url": "{{baseUrl}}/usuarios/{{usuarioAId}}"
+          }
+        }
+      ]
+    }
+  ]
+}
