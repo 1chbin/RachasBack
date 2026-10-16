@@ -138,6 +138,23 @@ export class ParticipacionesService {
     }
   }
 
+  async listarParticipantesActivosInterno(desafioId: string) {
+    const participaciones = await this.participacionModel
+      .find({
+        desafioId: new Types.ObjectId(desafioId),
+        abandonadoEn: { $exists: false },
+      })
+      .populate('usuarioId', 'nombre alias email zonaHoraria')
+      .sort({ seUnioEn: 1 });
+
+    return participaciones.map((participacion) => {
+      const usuario = participacion.usuarioId as unknown as {
+        _id: Types.ObjectId;
+      };
+      return { usuarioId: usuario._id.toString() };
+    });
+  }
+
   async listarParticipantesActivos(desafioId: string, usuarioId: string) {
     await this.desafiosService.obtenerDocumentoPorId(desafioId);
     await this.assertParticipacionActiva(desafioId, usuarioId);

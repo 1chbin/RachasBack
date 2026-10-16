@@ -14,12 +14,14 @@ import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 import { UsuarioIdGuard } from '../common/guards/usuario-id.guard';
 import { UsuarioId } from '../common/decorators/usuario-id.decorator';
 import { DesafiosService } from '../desafios/desafios.service';
+import { GamificacionService } from '../gamificacion/gamificacion.service';
 
 @Controller('usuarios')
 export class UsuariosController {
   constructor(
     private readonly usuariosService: UsuariosService,
     private readonly desafiosService: DesafiosService,
+    private readonly gamificacionService: GamificacionService,
   ) {}
 
   @Post()
@@ -30,6 +32,18 @@ export class UsuariosController {
   @Get()
   listarTodos() {
     return this.usuariosService.listarTodos();
+  }
+
+  @Get(':id/inicio')
+  @UseGuards(UsuarioIdGuard)
+  obtenerResumenInicio(
+    @Param('id') id: string,
+    @UsuarioId() usuarioId: string,
+  ) {
+    if (id !== usuarioId) {
+      throw new ForbiddenException('Solo podés consultar tu propio resumen');
+    }
+    return this.gamificacionService.obtenerResumenInicio(id);
   }
 
   @Get(':id/desafios')

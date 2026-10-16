@@ -17,12 +17,14 @@ import { UsuarioIdGuard } from '../common/guards/usuario-id.guard';
 import { UsuarioId } from '../common/decorators/usuario-id.decorator';
 import { OptionalUsuarioId } from '../common/decorators/optional-usuario-id.decorator';
 import { ParticipacionesService } from '../participaciones/participaciones.service';
+import { GamificacionService } from '../gamificacion/gamificacion.service';
 
 @Controller('desafios')
 export class DesafiosController {
   constructor(
     private readonly desafiosService: DesafiosService,
     private readonly participacionesService: ParticipacionesService,
+    private readonly gamificacionService: GamificacionService,
   ) {}
 
   @Get()
@@ -43,6 +45,18 @@ export class DesafiosController {
   @UseGuards(UsuarioIdGuard)
   crear(@Body() dto: CrearDesafioDto, @UsuarioId() usuarioId: string) {
     return this.desafiosService.crear(dto, usuarioId);
+  }
+
+  @Get(':id/ranking')
+  @UseGuards(UsuarioIdGuard)
+  obtenerRanking(@Param('id') id: string, @UsuarioId() usuarioId: string) {
+    return this.gamificacionService.obtenerRanking(id, usuarioId);
+  }
+
+  @Get(':id/racha')
+  @UseGuards(UsuarioIdGuard)
+  obtenerRacha(@Param('id') id: string, @UsuarioId() usuarioId: string) {
+    return this.gamificacionService.obtenerRachaDeUsuario(id, usuarioId);
   }
 
   @Get(':id/participantes')

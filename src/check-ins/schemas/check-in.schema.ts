@@ -25,6 +25,9 @@ export class CheckIn {
 
   @Prop({ required: true })
   zonaHorariaUsada: string;
+
+  @Prop({ required: true, min: 10 })
+  puntos: number;
 }
 
 export const CheckInSchema = SchemaFactory.createForClass(CheckIn);

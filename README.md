@@ -84,14 +84,40 @@ Se guarda el campo **`dia`** como string `YYYY-MM-DD` en la zona horaria de la p
 | GET | `/desafios/:id/participantes` | Sí (participante) | Participantes activos | 403, 404 |
 | POST | `/desafios/:id/check-ins` | Sí | Registrar check-in | 403, 409 no activo, 400 día |
 | DELETE | `/desafios/:id/check-ins/ultimo` | Sí | Deshacer último propio (solo hoy) | 400, 404 |
-| GET | `/desafios/:id/check-ins?usuarioId=` | No | Historial de una persona | 400, 404 |
+| GET | `/desafios/:id/check-ins?usuarioId=` | No | Historial paginado de una persona | 400, 404 |
+| GET | `/desafios/:id/racha` | Sí (participante) | Racha actual y mejor racha del usuario | 403, 404 |
+| GET | `/desafios/:id/ranking` | Sí (participante) | Ranking; `ganador` si `FINALIZADO` | 403, 404 |
+| GET | `/usuarios/:id/inicio` | Sí (propio id) | Desafíos vigentes con racha, posición y check-in de hoy | 403, 404 |
 
 Orden de validación en services: formato (400) → existencia (404) → permisos (403) → estado (409) → reglas de negocio (400/409).
+
+## Parte II — Puntos, rachas y paginación
+
+- Cada check-in guarda **`puntos`** (10 + bonus de racha: +0 / +5 / +10).
+- **`GET /desafios`** y **`GET /desafios/:id/check-ins`** responden `{ data, meta }` con `page` y `limit` (default 20, máx. 50).
+- Al arrancar, si hay check-ins antiguos sin puntos, se recalculan una sola vez (clave de migración `parte-2-puntos`).
+
+### Ejemplo resumen inicio
+
+`GET /usuarios/:id/inicio` con `x-usuario-id` igual al `:id`:
+
+```json
+{
+  "desafios": [
+    {
+      "desafio": { "id": "...", "nombre": "...", "estado": "ACTIVO" },
+      "rachaActual": 3,
+      "mejorRacha": 5,
+      "posicion": 2,
+      "puntosTotales": 45,
+      "checkInHoy": false
+    }
+  ]
+}
+```
 
 ## Pruebas manuales
 
 Usá [rachas.http](./rachas.http) con la extensión REST Client de VS Code/Cursor, o importá [rachas.postman_collection.json](./rachas.postman_collection.json) en Postman (carpeta **Flujo completo** en orden).
 
-## Parte II en adelante
-
-Puntos, rachas, ranking y paginación se implementan en la Parte II. Autenticación real y WebSockets en la Parte III.
+Autenticación real y WebSockets en la Parte III.

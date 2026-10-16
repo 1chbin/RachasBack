@@ -79,8 +79,23 @@ x-usuario-id: {{personaB.response.body.id}}
   "dia": "2099-01-01"
 }
 
-### Listar desafíos
-GET {{baseUrl}}/desafios
+### Listar desafíos (paginado)
+GET {{baseUrl}}/desafios?page=1&limit=20
 
 ### Listar desafíos por estado
-GET {{baseUrl}}/desafios?estado=PROGRAMADO&categoria=SALUD
+GET {{baseUrl}}/desafios?estado=PROGRAMADO&categoria=SALUD&page=1&limit=10
+
+### Parte II — Resumen inicio (persona A)
+GET {{baseUrl}}/usuarios/{{personaA.response.body.id}}/inicio
+x-usuario-id: {{personaA.response.body.id}}
+
+### Parte II — Ranking del desafío
+GET {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/ranking
+x-usuario-id: {{personaA.response.body.id}}
+
+### Parte II — Racha en el desafío
+GET {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/racha
+x-usuario-id: {{personaB.response.body.id}}
+
+### Parte II — Historial check-ins paginado
+GET {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/check-ins?usuarioId={{personaB.response.body.id}}&page=1&limit=20

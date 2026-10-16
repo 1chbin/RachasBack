@@ -4,11 +4,13 @@ import { Usuario, UsuarioSchema } from './schemas/usuario.schema';
 import { UsuariosService } from './usuarios.service';
 import { UsuariosController } from './usuarios.controller';
 import { DesafiosModule } from '../desafios/desafios.module';
+import { GamificacionModule } from '../gamificacion/gamificacion.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Usuario.name, schema: UsuarioSchema }]),
     forwardRef(() => DesafiosModule),
+    forwardRef(() => GamificacionModule),
   ],
   controllers: [UsuariosController],
   providers: [UsuariosService],

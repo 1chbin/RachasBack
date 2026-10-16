@@ -11,6 +11,8 @@ import {
   Participacion,
   ParticipacionSchema,
 } from '../participaciones/schemas/participacion.schema';
+import { CheckIn, CheckInSchema } from '../check-ins/schemas/check-in.schema';
+import { PuntosMigracionService } from './puntos-migracion.service';
 
 @Module({
   imports: [
@@ -19,8 +21,9 @@ import {
       { name: Usuario.name, schema: UsuarioSchema },
       { name: Desafio.name, schema: DesafioSchema },
       { name: Participacion.name, schema: ParticipacionSchema },
+      { name: CheckIn.name, schema: CheckInSchema },
     ]),
   ],
-  providers: [SeedService],
+  providers: [SeedService, PuntosMigracionService],
 })
 export class SeedModule {}

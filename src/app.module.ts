@@ -6,6 +6,7 @@ import { UsuariosModule } from './usuarios/usuarios.module';
 import { DesafiosModule } from './desafios/desafios.module';
 import { ParticipacionesModule } from './participaciones/participaciones.module';
 import { CheckInsModule } from './check-ins/check-ins.module';
+import { GamificacionModule } from './gamificacion/gamificacion.module';
 import { SeedModule } from './seed/seed.module';
 
 @Module({
@@ -22,6 +23,7 @@ import { SeedModule } from './seed/seed.module';
     DesafiosModule,
     ParticipacionesModule,
     CheckInsModule,
+    GamificacionModule,
     SeedModule,
   ],
 })

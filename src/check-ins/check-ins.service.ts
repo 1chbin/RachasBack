@@ -20,6 +20,9 @@ import {
 } from '../common/utils/fechas.util';
 import { serializarDocumento } from '../common/utils/serializar.util';
 import { lanzarSiDuplicado } from '../common/utils/errores-mongo.util';
+import { RachaPuntosService } from '../common/services/racha-puntos.service';
+import { PaginacionQueryDto } from '../common/dto/paginacion-query.dto';
+import { paginarArray } from '../common/utils/paginacion.util';
 
 @Injectable()
 export class CheckInsService {
@@ -29,6 +32,7 @@ export class CheckInsService {
     private readonly desafiosService: DesafiosService,
     private readonly participacionesService: ParticipacionesService,
     private readonly usuariosService: UsuariosService,
+    private readonly rachaPuntosService: RachaPuntosService,
   ) {}
 
   async registrar(desafioId: string, usuarioId: string, dto: CrearCheckInDto) {
@@ -70,6 +74,16 @@ export class CheckInsService {
       );
     }
 
+    const diasExistentes = await this.listarDiasCheckIn(desafioId, usuarioId);
+    const diasConNuevo = [...diasExistentes, dto.dia];
+    const rachaIncluyendoDia = this.rachaPuntosService.calcularRachaEnDia(
+      diasConNuevo,
+      dto.dia,
+    );
+    const puntos = this.rachaPuntosService.calcularPuntosCheckIn(
+      rachaIncluyendoDia,
+    );
+
     try {
       const checkIn = await this.checkInModel.create({
         desafioId: desafio._id,
@@ -78,6 +92,7 @@ export class CheckInsService {
         nota: dto.nota?.trim(),
         valor: dto.valor,
         zonaHorariaUsada: usuario.zonaHoraria,
+        puntos,
       });
       return serializarDocumento(checkIn);
     } catch (error) {
@@ -127,9 +142,13 @@ export class CheckInsService {
   async listarPorDesafioYUsuario(
     desafioId: string,
     usuarioIdConsulta: string,
+    paginacion: PaginacionQueryDto,
   ) {
     await this.desafiosService.obtenerDocumentoPorId(desafioId);
     await this.usuariosService.obtenerPorId(usuarioIdConsulta);
+
+    const page = paginacion.page ?? 1;
+    const limit = paginacion.limit ?? 20;
 
     const checkIns = await this.checkInModel
       .find({
@@ -138,6 +157,21 @@ export class CheckInsService {
       })
       .sort({ dia: -1, creadoEn: -1 });
 
-    return checkIns.map((checkIn) => serializarDocumento(checkIn));
+    const serializados = checkIns.map((checkIn) => serializarDocumento(checkIn));
+    return paginarArray(serializados, page, limit);
+  }
+
+  private async listarDiasCheckIn(
+    desafioId: string,
+    usuarioId: string,
+  ): Promise<string[]> {
+    const checkIns = await this.checkInModel
+      .find({
+        desafioId: new Types.ObjectId(desafioId),
+        usuarioId: new Types.ObjectId(usuarioId),
+      })
+      .select('dia')
+      .lean();
+    return checkIns.map((checkIn) => checkIn.dia);
   }
 }

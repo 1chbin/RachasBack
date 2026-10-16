@@ -45,6 +45,7 @@ export class CheckInsController {
     return this.checkInsService.listarPorDesafioYUsuario(
       desafioId,
       query.usuarioId,
+      query,
     );
   }
 }

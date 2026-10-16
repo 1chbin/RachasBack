@@ -24,6 +24,7 @@ import {
 import { ZONA_HORARIA_DEFAULT } from '../common/constants/zona-horaria-default';
 import { serializarDocumento } from '../common/utils/serializar.util';
 import { lanzarSiDuplicado } from '../common/utils/errores-mongo.util';
+import { paginarArray } from '../common/utils/paginacion.util';
 import { ParticipacionesService } from '../participaciones/participaciones.service';
 import { UsuariosService } from '../usuarios/usuarios.service';
 
@@ -151,11 +152,13 @@ export class DesafiosService {
       this.presentarResumenPublico(desafio),
     );
 
-    if (!query.estado) {
-      return presentados;
-    }
+    const filtrados = query.estado
+      ? presentados.filter((desafio) => desafio.estado === query.estado)
+      : presentados;
 
-    return presentados.filter((desafio) => desafio.estado === query.estado);
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    return paginarArray(filtrados, page, limit);
   }
 
   async listarPorParticipante(usuarioId: string) {
