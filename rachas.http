@@ -1,101 +1,81 @@
 @baseUrl = http://localhost:3000
+# Pegá un Firebase ID token (después de login en la app o consola Firebase):
+@firebaseToken = eyJhbGciOiJSUzI1NiIs...
 
-### 1) Registrar persona A
-# @name personaA
-POST {{baseUrl}}/usuarios
-Content-Type: application/json
+### 401 — sin token
+GET {{baseUrl}}/usuarios/me
 
-{
-  "nombre": "Ana Prueba",
-  "alias": "ana_test",
-  "email": "ana.test@ejemplo.com"
-}
+### Perfil autenticado
+GET {{baseUrl}}/usuarios/me
+Authorization: Bearer {{firebaseToken}}
 
-### 2) Registrar persona B
-# @name personaB
-POST {{baseUrl}}/usuarios
-Content-Type: application/json
+### Resumen inicio
+GET {{baseUrl}}/usuarios/me/inicio
+Authorization: Bearer {{firebaseToken}}
 
-{
-  "nombre": "Bruno Prueba",
-  "alias": "bruno_test",
-  "email": "bruno.test@ejemplo.com"
-}
+### Listar desafíos (explorar)
+GET {{baseUrl}}/desafios?page=1&limit=20
+Authorization: Bearer {{firebaseToken}}
 
-### 3) Crear desafío (persona A)
+### Crear desafío
 # @name crearDesafio
 POST {{baseUrl}}/desafios
 Content-Type: application/json
-x-usuario-id: {{personaA.response.body.id}}
+Authorization: Bearer {{firebaseToken}}
 
 {
   "nombre": "Desafío HTTP de prueba",
-  "descripcion": "Flujo Postman/REST Client",
+  "descripcion": "Flujo con Firebase Auth",
   "categoria": "BIENESTAR",
-  "fechaInicio": "2026-10-10",
-  "fechaFin": "2026-10-20",
+  "fechaInicio": "2026-10-24",
+  "fechaFin": "2026-11-10",
   "maxParticipantes": 4
 }
 
-### 4) Unirse con código (persona B)
+### Unirse con código (misma u otra cuenta; otro token)
 POST {{baseUrl}}/desafios/unirse
 Content-Type: application/json
-x-usuario-id: {{personaB.response.body.id}}
+Authorization: Bearer {{firebaseToken}}
 
 {
   "codigoInvitacion": "{{crearDesafio.response.body.codigoInvitacion}}"
 }
 
-### 5) Check-in (persona B) — ajustá `dia` a hoy (YYYY-MM-DD) si el desafío está ACTIVO
+### Check-in — ajustá `dia` a hoy (YYYY-MM-DD) si el desafío está ACTIVO
 POST {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/check-ins
 Content-Type: application/json
-x-usuario-id: {{personaB.response.body.id}}
+Authorization: Bearer {{firebaseToken}}
 
 {
-  "dia": "2026-10-10",
+  "dia": "2026-10-24",
   "nota": "Listo",
   "valor": 30
 }
 
-### 6) Deshacer último check-in (persona B)
+### Deshacer último check-in
 DELETE {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/check-ins/ultimo
-x-usuario-id: {{personaB.response.body.id}}
+Authorization: Bearer {{firebaseToken}}
+
+### Definir alias (primer ingreso)
+PATCH {{baseUrl}}/usuarios/me/alias
+Content-Type: application/json
+Authorization: Bearer {{firebaseToken}}
+
+{
+  "alias": "mi_alias_tp"
+}
 
 ### --- Errores esperados ---
 
-### E1) 409 — cupo completo (crear desafío con max 2 y unir 2 extras)
-# Ejecutar manualmente tras llenar cupo
-
-### E2) 403 — cancelar sin ser creador
+### E1) 403 — cancelar sin ser creador (token de quien no creó)
 POST {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/cancelar
-x-usuario-id: {{personaB.response.body.id}}
+Authorization: Bearer {{firebaseToken}}
 
-### E3) 400 — check-in en día no permitido (futuro)
+### E2) 400 — check-in en día no permitido (futuro)
 POST {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/check-ins
 Content-Type: application/json
-x-usuario-id: {{personaB.response.body.id}}
+Authorization: Bearer {{firebaseToken}}
 
 {
   "dia": "2099-01-01"
 }
-
-### Listar desafíos (paginado)
-GET {{baseUrl}}/desafios?page=1&limit=20
-
-### Listar desafíos por estado
-GET {{baseUrl}}/desafios?estado=PROGRAMADO&categoria=SALUD&page=1&limit=10
-
-### Parte II — Resumen inicio (persona A)
-GET {{baseUrl}}/usuarios/{{personaA.response.body.id}}/inicio
-x-usuario-id: {{personaA.response.body.id}}
-
-### Parte II — Ranking del desafío
-GET {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/ranking
-x-usuario-id: {{personaA.response.body.id}}
-
-### Parte II — Racha en el desafío
-GET {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/racha
-x-usuario-id: {{personaB.response.body.id}}
-
-### Parte II — Historial check-ins paginado
-GET {{baseUrl}}/desafios/{{crearDesafio.response.body.id}}/check-ins?usuarioId={{personaB.response.body.id}}&page=1&limit=20

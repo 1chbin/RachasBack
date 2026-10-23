@@ -8,6 +8,10 @@
 .env
 .env.local
 
+# Firebase service account (nunca commitear)
+/secrets/
+*-firebase-adminsdk*.json
+
 # logs
 *.log
 

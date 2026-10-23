@@ -1,12 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CrearUsuarioDto } from './dto/crear-usuario.dto';
 import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
 import { Usuario, UsuarioDocument } from './schemas/usuario.schema';
 import { serializarDocumento } from '../common/utils/serializar.util';
-import { lanzarSiDuplicado } from '../common/utils/errores-mongo.util';
-import { ZONA_HORARIA_DEFAULT } from '../common/constants/zona-horaria-default';
+import { esAliasProvisional } from '../common/utils/alias-provisional.util';
 
 @Injectable()
 export class UsuariosService {
@@ -15,32 +13,16 @@ export class UsuariosService {
     private readonly usuarioModel: Model<UsuarioDocument>,
   ) {}
 
-  async listarTodos() {
-    const usuarios = await this.usuarioModel.find().sort({ createdAt: -1 });
-    return usuarios.map((usuario) => serializarDocumento(usuario));
-  }
-
-  async crear(dto: CrearUsuarioDto) {
-    try {
-      const usuario = await this.usuarioModel.create({
-        nombre: dto.nombre.trim(),
-        alias: dto.alias.trim().toLowerCase(),
-        email: dto.email.trim().toLowerCase(),
-        zonaHoraria: dto.zonaHoraria ?? ZONA_HORARIA_DEFAULT,
-      });
-      return serializarDocumento(usuario);
-    } catch (error) {
-      lanzarSiDuplicado(error, 'El alias o el email ya están registrados');
-      throw error;
-    }
-  }
-
-  async obtenerPorId(id: string) {
+  async obtenerPerfilAutenticado(id: string) {
     const usuario = await this.usuarioModel.findById(id);
     if (!usuario) {
       throw new NotFoundException('Usuario no encontrado');
     }
-    return serializarDocumento(usuario);
+    const base = serializarDocumento(usuario);
+    return {
+      ...base,
+      requiereAlias: esAliasProvisional(usuario.alias),
+    };
   }
 
   async obtenerDocumentoPorId(id: string): Promise<UsuarioDocument> {
@@ -65,7 +47,11 @@ export class UsuariosService {
     }
 
     await usuario.save();
-    return serializarDocumento(usuario);
+    const base = serializarDocumento(usuario);
+    return {
+      ...base,
+      requiereAlias: esAliasProvisional(usuario.alias),
+    };
   }
 
   async existePorId(id: string): Promise<boolean> {

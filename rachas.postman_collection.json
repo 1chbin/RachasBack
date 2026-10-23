@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "rachas-parte-1-api",
-    "name": "Rachas - Parte I (API)",
-    "description": "Flujo completo: 2 usuarios, desafío, unión, check-ins y casos de error.\n\n**Antes de correr:** levantá el back (`npm run start:dev`).\n\n**Orden:** ejecutá la carpeta «Flujo completo» de arriba hacia abajo (o Run collection). Las variables `usuarioAId`, `usuarioBId`, `desafioId`, `codigoInvitacion`, `diaHoy` y `fechaFinDesafio` se setean solas.\n\nAjustá `baseUrl` si usás otro puerto.",
+    "name": "Rachas - API (Firebase Auth)",
+    "description": "Parte III: todas las rutas usan Authorization Bearer con Firebase ID token.\\n\\nSeteá firebaseToken (y opcional firebaseTokenB para segundo usuario) en variables de colección. Obtené tokens desde la app móvil o Firebase CLI.\\n\\nLos pasos de POST /usuarios quedan obsoletos; el alta es automática al primer token válido.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "event": [
@@ -28,17 +28,58 @@
     }
   ],
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000" },
-    { "key": "usuarioAId", "value": "" },
-    { "key": "usuarioBId", "value": "" },
-    { "key": "desafioId", "value": "" },
-    { "key": "codigoInvitacion", "value": "" },
-    { "key": "diaHoy", "value": "" },
-    { "key": "fechaFinDesafio", "value": "" },
-    { "key": "aliasA", "value": "" },
-    { "key": "aliasB", "value": "" },
-    { "key": "emailA", "value": "" },
-    { "key": "emailB", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "usuarioAId",
+      "value": ""
+    },
+    {
+      "key": "usuarioBId",
+      "value": ""
+    },
+    {
+      "key": "desafioId",
+      "value": ""
+    },
+    {
+      "key": "codigoInvitacion",
+      "value": ""
+    },
+    {
+      "key": "diaHoy",
+      "value": ""
+    },
+    {
+      "key": "fechaFinDesafio",
+      "value": ""
+    },
+    {
+      "key": "aliasA",
+      "value": ""
+    },
+    {
+      "key": "aliasB",
+      "value": ""
+    },
+    {
+      "key": "emailA",
+      "value": ""
+    },
+    {
+      "key": "emailB",
+      "value": ""
+    },
+    {
+      "key": "firebaseToken",
+      "value": ""
+    },
+    {
+      "key": "firebaseTokenB",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -63,7 +104,16 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombre\": \"Ana Postman\",\n  \"alias\": \"{{aliasA}}\",\n  \"email\": \"{{emailA}}\"\n}"
@@ -89,7 +139,16 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombre\": \"Bruno Postman\",\n  \"alias\": \"{{aliasB}}\",\n  \"email\": \"{{emailB}}\"\n}"
@@ -121,8 +180,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-usuario-id", "value": "{{usuarioAId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -149,8 +214,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-usuario-id", "value": "{{usuarioBId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -163,7 +234,12 @@
           "name": "5 - Listar participantes (participante A)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "x-usuario-id", "value": "{{usuarioAId}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/desafios/{{desafioId}}/participantes"
           }
         },
@@ -184,7 +260,12 @@
           ],
           "request": {
             "method": "GET",
-            "header": [{ "key": "x-usuario-id", "value": "{{usuarioAId}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/desafios/{{desafioId}}"
           }
         },
@@ -206,8 +287,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-usuario-id", "value": "{{usuarioBId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -221,8 +308,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-usuario-id", "value": "{{usuarioAId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -237,9 +330,20 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/desafios/{{desafioId}}/check-ins?usuarioId={{usuarioBId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["desafios", "{{desafioId}}", "check-ins"],
-              "query": [{ "key": "usuarioId", "value": "{{usuarioBId}}" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "desafios",
+                "{{desafioId}}",
+                "check-ins"
+              ],
+              "query": [
+                {
+                  "key": "usuarioId",
+                  "value": "{{usuarioBId}}"
+                }
+              ]
             }
           }
         },
@@ -260,7 +364,12 @@
           ],
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "x-usuario-id", "value": "{{usuarioBId}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/desafios/{{desafioId}}/check-ins/ultimo"
           }
         }
@@ -286,7 +395,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "x-usuario-id", "value": "{{usuarioBId}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/desafios/{{desafioId}}/cancelar"
           }
         },
@@ -308,8 +422,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-usuario-id", "value": "{{usuarioBId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -336,8 +456,14 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-usuario-id", "value": "{{usuarioAId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
             ],
             "body": {
               "mode": "raw",
@@ -382,11 +508,21 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/desafios?estado=ACTIVO&categoria=SALUD",
-              "host": ["{{baseUrl}}"],
-              "path": ["desafios"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "desafios"
+              ],
               "query": [
-                { "key": "estado", "value": "ACTIVO" },
-                { "key": "categoria", "value": "SALUD" }
+                {
+                  "key": "estado",
+                  "value": "ACTIVO"
+                },
+                {
+                  "key": "categoria",
+                  "value": "SALUD"
+                }
               ]
             }
           }
@@ -402,7 +538,12 @@
           "name": "GET Detalle desafío (participante, con código)",
           "request": {
             "method": "GET",
-            "header": [{ "key": "x-usuario-id", "value": "{{usuarioAId}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
+            ],
             "url": "{{baseUrl}}/desafios/{{desafioId}}"
           }
         },
@@ -410,7 +551,7 @@
           "name": "GET Desafíos de usuario A",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/usuarios/{{usuarioAId}}/desafios"
+            "url": "{{baseUrl}}/usuarios/me/desafios"
           }
         },
         {
@@ -432,8 +573,14 @@
           "request": {
             "method": "PATCH",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "x-usuario-id", "value": "{{usuarioAId}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{firebaseToken}}"
+              }
             ],
             "body": {
               "mode": "raw",

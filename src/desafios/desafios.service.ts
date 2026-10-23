@@ -162,7 +162,7 @@ export class DesafiosService {
   }
 
   async listarPorParticipante(usuarioId: string) {
-    await this.usuariosService.obtenerPorId(usuarioId);
+    await this.usuariosService.obtenerDocumentoPorId(usuarioId);
     const desafioIds =
       await this.participacionesService.listarDesafioIdsPorUsuario(usuarioId);
 

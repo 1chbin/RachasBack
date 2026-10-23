@@ -1,71 +1,49 @@
-import {
-  Body,
-  Controller,
-  ForbiddenException,
-  Get,
-  Param,
-  Patch,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Patch } from '@nestjs/common';
 import { UsuariosService } from './usuarios.service';
-import { CrearUsuarioDto } from './dto/crear-usuario.dto';
 import { ActualizarUsuarioDto } from './dto/actualizar-usuario.dto';
-import { UsuarioIdGuard } from '../common/guards/usuario-id.guard';
+import { ActualizarAliasDto } from './dto/actualizar-alias.dto';
 import { UsuarioId } from '../common/decorators/usuario-id.decorator';
 import { DesafiosService } from '../desafios/desafios.service';
 import { GamificacionService } from '../gamificacion/gamificacion.service';
+import { AuthUsuarioService } from '../auth/auth-usuario.service';
 
 @Controller('usuarios')
 export class UsuariosController {
   constructor(
     private readonly usuariosService: UsuariosService,
+    private readonly authUsuarioService: AuthUsuarioService,
     private readonly desafiosService: DesafiosService,
     private readonly gamificacionService: GamificacionService,
   ) {}
 
-  @Post()
-  crear(@Body() dto: CrearUsuarioDto) {
-    return this.usuariosService.crear(dto);
+  @Get('me')
+  obtenerMe(@UsuarioId() usuarioId: string) {
+    return this.usuariosService.obtenerPerfilAutenticado(usuarioId);
   }
 
-  @Get()
-  listarTodos() {
-    return this.usuariosService.listarTodos();
+  @Get('me/inicio')
+  obtenerResumenInicio(@UsuarioId() usuarioId: string) {
+    return this.gamificacionService.obtenerResumenInicio(usuarioId);
   }
 
-  @Get(':id/inicio')
-  @UseGuards(UsuarioIdGuard)
-  obtenerResumenInicio(
-    @Param('id') id: string,
-    @UsuarioId() usuarioId: string,
-  ) {
-    if (id !== usuarioId) {
-      throw new ForbiddenException('Solo podés consultar tu propio resumen');
-    }
-    return this.gamificacionService.obtenerResumenInicio(id);
+  @Get('me/desafios')
+  listarMisDesafios(@UsuarioId() usuarioId: string) {
+    return this.desafiosService.listarPorParticipante(usuarioId);
   }
 
-  @Get(':id/desafios')
-  listarDesafiosDeUsuario(@Param('id') id: string) {
-    return this.desafiosService.listarPorParticipante(id);
-  }
-
-  @Get(':id')
-  obtenerPorId(@Param('id') id: string) {
-    return this.usuariosService.obtenerPorId(id);
-  }
-
-  @Patch(':id')
-  @UseGuards(UsuarioIdGuard)
-  actualizar(
-    @Param('id') id: string,
+  @Patch('me')
+  actualizarMe(
     @UsuarioId() usuarioId: string,
     @Body() dto: ActualizarUsuarioDto,
   ) {
-    if (id !== usuarioId) {
-      throw new ForbiddenException('Solo podés modificar tu propio perfil');
-    }
-    return this.usuariosService.actualizar(id, dto);
+    return this.usuariosService.actualizar(usuarioId, dto);
+  }
+
+  @Patch('me/alias')
+  actualizarAlias(
+    @UsuarioId() usuarioId: string,
+    @Body() dto: ActualizarAliasDto,
+  ) {
+    return this.authUsuarioService.actualizarAlias(usuarioId, dto);
   }
 }

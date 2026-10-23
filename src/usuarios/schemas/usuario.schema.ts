@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 import { ZONA_HORARIA_DEFAULT } from '../../common/constants/zona-horaria-default';
+import { ProveedorAuth } from '../../common/enums/proveedor-auth.enum';
 
 export type UsuarioDocument = HydratedDocument<Usuario>;
 
@@ -17,6 +18,12 @@ export class Usuario {
 
   @Prop({ required: true, default: ZONA_HORARIA_DEFAULT })
   zonaHoraria: string;
+
+  @Prop({ trim: true, sparse: true, unique: true })
+  firebaseUid?: string;
+
+  @Prop({ enum: ProveedorAuth })
+  proveedorAuth?: ProveedorAuth;
 }
 
 export const UsuarioSchema = SchemaFactory.createForClass(Usuario);

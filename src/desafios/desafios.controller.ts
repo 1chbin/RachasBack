@@ -6,14 +6,12 @@ import {
   Patch,
   Post,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { DesafiosService } from './desafios.service';
 import { CrearDesafioDto } from './dto/crear-desafio.dto';
 import { ActualizarDesafioDto } from './dto/actualizar-desafio.dto';
 import { ListarDesafiosQueryDto } from './dto/listar-desafios-query.dto';
 import { UnirseDesafioDto } from './dto/unirse-desafio.dto';
-import { UsuarioIdGuard } from '../common/guards/usuario-id.guard';
 import { UsuarioId } from '../common/decorators/usuario-id.decorator';
 import { OptionalUsuarioId } from '../common/decorators/optional-usuario-id.decorator';
 import { ParticipacionesService } from '../participaciones/participaciones.service';
@@ -33,7 +31,6 @@ export class DesafiosController {
   }
 
   @Post('unirse')
-  @UseGuards(UsuarioIdGuard)
   unirse(@Body() dto: UnirseDesafioDto, @UsuarioId() usuarioId: string) {
     return this.participacionesService.unirse(
       dto.codigoInvitacion.toUpperCase(),
@@ -42,25 +39,21 @@ export class DesafiosController {
   }
 
   @Post()
-  @UseGuards(UsuarioIdGuard)
   crear(@Body() dto: CrearDesafioDto, @UsuarioId() usuarioId: string) {
     return this.desafiosService.crear(dto, usuarioId);
   }
 
   @Get(':id/ranking')
-  @UseGuards(UsuarioIdGuard)
   obtenerRanking(@Param('id') id: string, @UsuarioId() usuarioId: string) {
     return this.gamificacionService.obtenerRanking(id, usuarioId);
   }
 
   @Get(':id/racha')
-  @UseGuards(UsuarioIdGuard)
   obtenerRacha(@Param('id') id: string, @UsuarioId() usuarioId: string) {
     return this.gamificacionService.obtenerRachaDeUsuario(id, usuarioId);
   }
 
   @Get(':id/participantes')
-  @UseGuards(UsuarioIdGuard)
   listarParticipantes(
     @Param('id') id: string,
     @UsuarioId() usuarioId: string,
@@ -69,13 +62,11 @@ export class DesafiosController {
   }
 
   @Post(':id/abandonar')
-  @UseGuards(UsuarioIdGuard)
   abandonar(@Param('id') id: string, @UsuarioId() usuarioId: string) {
     return this.participacionesService.abandonar(id, usuarioId);
   }
 
   @Post(':id/cancelar')
-  @UseGuards(UsuarioIdGuard)
   cancelar(@Param('id') id: string, @UsuarioId() usuarioId: string) {
     return this.desafiosService.cancelar(id, usuarioId);
   }
@@ -89,7 +80,6 @@ export class DesafiosController {
   }
 
   @Patch(':id')
-  @UseGuards(UsuarioIdGuard)
   actualizar(
     @Param('id') id: string,
     @Body() dto: ActualizarDesafioDto,

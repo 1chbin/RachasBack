@@ -24,18 +24,28 @@ npm run start:dev
 
 Al iniciar, si es la primera vez, se cargan **datos de prueba** (3 usuarios y 2 desafíos) de forma idempotente.
 
-## Identificación (Parte I)
+## Autenticación (Parte III)
 
-Los pedidos que modifican datos o actúan en nombre de una persona envían el header:
+Todos los endpoints (salvo los marcados explícitamente como públicos en el futuro) requieren:
 
-`x-usuario-id: <id de MongoDB>`
+`Authorization: Bearer <Firebase ID token>`
+
+El back valida el token con **Firebase Admin SDK**. La primera vez que alguien ingresa con Google se crea su documento en `usuarios` (vinculado por `firebaseUid`). La persona activa **nunca** se envía en body, query ni headers custom.
+
+**Opción recomendada:** descargá el JSON de la cuenta de servicio (Firebase → Cuentas de servicio → generar clave) y guardalo en `RachasBack/secrets/` (carpeta gitignored). En `.env`:
+
+`FIREBASE_SERVICE_ACCOUNT_PATH=./secrets/firebase-adminsdk.json`
+
+**Opción alternativa:** variables `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` (PEM en una línea con `\n`; ver `.env.example`).
+
+Si el back falla con `Failed to parse private key`, usá la ruta al JSON en lugar de pegar la clave en `.env`.
 
 ## Visibilidad del desafío y código de invitación
 
 - **`GET /desafios`** devuelve un **resumen público** (explorar): nombre, categoría, estado, fechas, etc. **No** incluye `codigoInvitacion`.
-- **`GET /desafios/:id`**: sin `x-usuario-id`, o con un usuario que **no** participa → mismo resumen público. Con `x-usuario-id` de un **participante activo** → detalle completo, **incluido** `codigoInvitacion` (para invitar a otros).
-- **`GET /usuarios/:id/desafios`**: desafíos donde participa esa persona; cada ítem es detalle de participante (con código).
-- **`GET /desafios/:id/participantes`**: requiere `x-usuario-id` y participación activa; si no, **403**.
+- **`GET /desafios/:id`**: si quien consulta **no** participa → resumen público. Si participa → detalle con `codigoInvitacion`.
+- **`GET /usuarios/me/desafios`**: desafíos del usuario autenticado (con código si corresponde).
+- **`GET /desafios/:id/participantes`**: requiere participación activa; si no, **403**.
 
 El código de invitación funciona como secreto de unión: no se expone en el catálogo global.
 
@@ -69,14 +79,14 @@ Se guarda el campo **`dia`** como string `YYYY-MM-DD` en la zona horaria de la p
 
 | Método | Ruta | Auth | Descripción | Errores típicos |
 |--------|------|------|-------------|-----------------|
-| POST | `/usuarios` | No | Registrar persona | 400 validación, 409 alias/email duplicado |
-| GET | `/usuarios` | No | Listar todas las personas | — |
-| GET | `/usuarios/:id` | No | Obtener persona | 404 |
-| PATCH | `/usuarios/:id` | Sí (propio) | Actualizar nombre / zona horaria | 403, 404 |
-| GET | `/usuarios/:id/desafios` | No | Desafíos en los que participa | 404 usuario |
-| GET | `/desafios` | No | Listar resumen público (sin `codigoInvitacion`) | 400 query |
-| POST | `/desafios` | Sí | Crear desafío (respuesta con código) | 400 reglas, 409 límite 5 vigentes |
-| GET | `/desafios/:id` | Opcional | Resumen público; detalle con código si participa | 404, 403 header inválido |
+| GET | `/usuarios/me` | Sí | Persona autenticada (`requiereAlias` si falta alias) | 401 |
+| PATCH | `/usuarios/me` | Sí | Actualizar nombre / zona horaria | 401, 404 |
+| PATCH | `/usuarios/me/alias` | Sí | Elegir alias único (post primer login) | 400, 409 |
+| GET | `/usuarios/me/desafios` | Sí | Desafíos en los que participa | 401 |
+| GET | `/usuarios/me/inicio` | Sí | Resumen de desafíos vigentes | 401 |
+| GET | `/desafios` | Sí | Listar resumen (sin `codigoInvitacion`) | 401, 400 query |
+| POST | `/desafios` | Sí | Crear desafío (respuesta con código) | 401, 400 reglas, 409 límite 5 vigentes |
+| GET | `/desafios/:id` | Sí | Resumen o detalle según participación | 401, 404 |
 | PATCH | `/desafios/:id` | Sí (creador) | Modificar | 403, 409 estado |
 | POST | `/desafios/:id/cancelar` | Sí (creador) | Cancelar | 403, 409 |
 | POST | `/desafios/unirse` | Sí | Unirse por código | 404 código, 409 cupo/reingreso/límite 5 |
@@ -84,10 +94,9 @@ Se guarda el campo **`dia`** como string `YYYY-MM-DD` en la zona horaria de la p
 | GET | `/desafios/:id/participantes` | Sí (participante) | Participantes activos | 403, 404 |
 | POST | `/desafios/:id/check-ins` | Sí | Registrar check-in | 403, 409 no activo, 400 día |
 | DELETE | `/desafios/:id/check-ins/ultimo` | Sí | Deshacer último propio (solo hoy) | 400, 404 |
-| GET | `/desafios/:id/check-ins?usuarioId=` | No | Historial paginado de una persona | 400, 404 |
+| GET | `/desafios/:id/check-ins` | Sí | Historial paginado del usuario autenticado | 401, 404 |
 | GET | `/desafios/:id/racha` | Sí (participante) | Racha actual y mejor racha del usuario | 403, 404 |
 | GET | `/desafios/:id/ranking` | Sí (participante) | Ranking; `ganador` si `FINALIZADO` | 403, 404 |
-| GET | `/usuarios/:id/inicio` | Sí (propio id) | Desafíos vigentes con racha, posición y check-in de hoy | 403, 404 |
 
 Orden de validación en services: formato (400) → existencia (404) → permisos (403) → estado (409) → reglas de negocio (400/409).
 
@@ -99,7 +108,7 @@ Orden de validación en services: formato (400) → existencia (404) → permiso
 
 ### Ejemplo resumen inicio
 
-`GET /usuarios/:id/inicio` con `x-usuario-id` igual al `:id`:
+`GET /usuarios/me/inicio` con Bearer token:
 
 ```json
 {

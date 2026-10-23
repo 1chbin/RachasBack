@@ -145,7 +145,7 @@ export class CheckInsService {
     paginacion: PaginacionQueryDto,
   ) {
     await this.desafiosService.obtenerDocumentoPorId(desafioId);
-    await this.usuariosService.obtenerPorId(usuarioIdConsulta);
+    await this.usuariosService.obtenerDocumentoPorId(usuarioIdConsulta);
 
     const page = paginacion.page ?? 1;
     const limit = paginacion.limit ?? 20;
