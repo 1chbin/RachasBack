@@ -14,6 +14,11 @@ import { FirebaseAuthService } from '../auth/firebase-auth.service';
 import { AuthUsuarioService } from '../auth/auth-usuario.service';
 import { ParticipacionesService } from '../participaciones/participaciones.service';
 import { DesafiosRealtimeService } from './desafios-realtime.service';
+import {
+  emojiDeAliento,
+  esAlientoEmojiValido,
+} from './aliento.constants';
+import { AlientoRateLimitService } from './aliento-rate-limit.service';
 import { REALTIME_EVENT, salaDesafio } from './realtime.constants';
 
 type SocketData = {
@@ -24,6 +29,12 @@ type SocketData = {
 type SuscribirPayload = { desafioId?: string };
 
 type SuscribirAck = { ok: true } | { ok: false; message: string };
+
+type EnviarAlientoPayload = {
+  desafioId?: string;
+  destinatarioUsuarioId?: string;
+  emojiId?: string;
+};
 
 function extraerToken(client: Socket): string | null {
   const authToken = client.handshake.auth?.token;
@@ -57,6 +68,7 @@ export class DesafiosGateway
     private readonly authUsuarioService: AuthUsuarioService,
     private readonly participacionesService: ParticipacionesService,
     private readonly desafiosRealtimeService: DesafiosRealtimeService,
+    private readonly alientoRateLimitService: AlientoRateLimitService,
   ) {}
 
   afterInit(server: Server): void {
@@ -137,6 +149,85 @@ export class DesafiosGateway
     }
 
     await client.leave(salaDesafio(desafioId));
+    return { ok: true };
+  }
+
+  @SubscribeMessage(REALTIME_EVENT.ALIENTO_ENVIAR)
+  async enviarAliento(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() body: EnviarAlientoPayload,
+  ): Promise<SuscribirAck> {
+    const data = client.data as SocketData;
+    const usuarioId = data.usuarioId;
+    const remitenteAlias = data.alias;
+    if (!usuarioId || !remitenteAlias) {
+      return { ok: false, message: 'Conexión no autenticada' };
+    }
+
+    const desafioId = body?.desafioId?.trim();
+    const destinatarioUsuarioId = body?.destinatarioUsuarioId?.trim();
+    const emojiId = body?.emojiId?.trim();
+
+    if (!desafioId || !destinatarioUsuarioId || !emojiId) {
+      return {
+        ok: false,
+        message: 'Se requieren desafioId, destinatarioUsuarioId y emojiId',
+      };
+    }
+
+    if (!esAlientoEmojiValido(emojiId)) {
+      return { ok: false, message: 'Emoji de aliento no válido' };
+    }
+
+    if (destinatarioUsuarioId === usuarioId) {
+      return { ok: false, message: 'No podés enviarte un aliento a vos mismo' };
+    }
+
+    const participacionRemitente =
+      await this.participacionesService.obtenerParticipacionActiva(
+        desafioId,
+        usuarioId,
+      );
+    if (!participacionRemitente) {
+      return {
+        ok: false,
+        message: 'Solo podés enviar alientos en desafíos en los que participás',
+      };
+    }
+
+    const participacionDestinatario =
+      await this.participacionesService.obtenerParticipacionActiva(
+        desafioId,
+        destinatarioUsuarioId,
+      );
+    if (!participacionDestinatario) {
+      return {
+        ok: false,
+        message: 'El destinatario no participa de este desafío',
+      };
+    }
+
+    const sala = salaDesafio(desafioId);
+    if (!client.rooms.has(sala)) {
+      await client.join(sala);
+    }
+
+    if (!this.alientoRateLimitService.intentar(usuarioId, desafioId)) {
+      return {
+        ok: false,
+        message: 'Esperá unos segundos antes de enviar otro aliento',
+      };
+    }
+
+    this.server.to(sala).emit(REALTIME_EVENT.ALIENTO_RECIBIDO, {
+      desafioId,
+      destinatarioUsuarioId,
+      remitenteUsuarioId: usuarioId,
+      remitenteAlias,
+      emojiId,
+      emoji: emojiDeAliento(emojiId),
+    });
+
     return { ok: true };
   }
 }

@@ -145,6 +145,7 @@ También se acepta `Authorization: Bearer …` en los headers del handshake.
 |--------|---------|-----------------|
 | `desafio:suscribir` | `{ "desafioId": string }` | `{ "ok": true }` o `{ "ok": false, "message": string }` si no participás |
 | `desafio:desuscribir` | `{ "desafioId": string }` | `{ "ok": true }` |
+| `aliento:enviar` | `{ "desafioId", "destinatarioUsuarioId", "emojiId" }` — `emojiId`: `fuego` \| `fuerza` \| `aplauso` \| `corazon` \| `estrella` | `{ "ok": true }` o `{ "ok": false, "message": string }` (auto-aliento, no participante, emoji inválido, rate limit 10 s) |
 
 Tras suscribirte, el socket entra en la sala `desafio:<desafioId>`.
 
@@ -158,8 +159,13 @@ Tras suscribirte, el socket entra en la sala `desafio:<desafioId>`.
 | `participante:unido` | Unión con código | `{ desafioId, usuarioId, alias }` |
 | `participante:abandono` | Abandono | `{ desafioId, usuarioId, alias }` |
 | `desafio:cancelado` | Cancelación por creador | `{ desafioId, estado: "CANCELADO" }` |
+| `aliento:recibido` | Aliento enviado por otro participante (efímero, no persistido) | `{ desafioId, destinatarioUsuarioId, remitenteUsuarioId, remitenteAlias, emojiId, emoji }` — solo el destinatario debería mostrarlo en UI |
 
-Los eventos se emiten **después** de persistir en MongoDB. Si un cliente pierde la conexión, debe volver a `desafio:suscribir` y refrescar el estado por HTTP (la app no reenvía eventos históricos).
+Los eventos se emiten **después** de persistir en MongoDB (salvo `aliento:recibido`, que no se guarda). Si un cliente pierde la conexión, debe volver a `desafio:suscribir` y refrescar el estado por HTTP (la app no reenvía eventos históricos).
+
+### Alientos efímeros (Consigna C)
+
+Los alientos **no se guardan** en la base: son señales en tiempo real para motivar en el momento. Implica: no hay historial ni notificaciones push retroactivas; si el destinatario no tiene el detalle abierto (o pierde el evento), el aliento se pierde. El límite de un aliento cada 10 segundos por persona y desafío vive en memoria del servidor (un reinicio del back lo resetea).
 
 ### Prueba manual (tiempo real)
 
@@ -167,3 +173,4 @@ Los eventos se emiten **después** de persistir en MongoDB. Si un cliente pierde
 2. Abrí el detalle del desafío en ambas.
 3. Registrá un check-in en una → en la otra el ranking se reordena sin pull-to-refresh y aparece un aviso breve.
 4. Cortá la red o matá la app, volvé → datos consistentes tras reconexión y refetch.
+5. **Alientos:** con el detalle abierto en ambos, A elige emoji para B en el ranking → B ve el banner efímero; segundo envío en menos de 10 s → error en ack.

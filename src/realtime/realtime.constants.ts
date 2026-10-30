@@ -7,6 +7,8 @@ export const REALTIME_EVENT = {
   PARTICIPANTE_UNIDO: 'participante:unido',
   PARTICIPANTE_ABANDONO: 'participante:abandono',
   DESAFIO_CANCELADO: 'desafio:cancelado',
+  ALIENTO_ENVIAR: 'aliento:enviar',
+  ALIENTO_RECIBIDO: 'aliento:recibido',
 } as const;
 
 export function salaDesafio(desafioId: string): string {
