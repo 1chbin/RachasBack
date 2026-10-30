@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CheckIn, CheckInDocument } from '../check-ins/schemas/check-in.schema';
@@ -9,21 +9,18 @@ import { RachaPuntosService } from '../common/services/racha-puntos.service';
 import { EstadoDesafio } from '../common/enums/estado-desafio.enum';
 import { EstadoDesafioService } from '../common/services/estado-desafio.service';
 import { obtenerFechaCalendarioHoy } from '../common/utils/fechas.util';
+import type { FilaRanking } from './fila-ranking.interface';
 
-export interface FilaRanking {
-  posicion: number;
-  usuarioId: string;
-  alias: string;
-  puntosTotales: number;
-  rachaActual: number;
-}
+export type { FilaRanking } from './fila-ranking.interface';
 
 @Injectable()
 export class GamificacionService {
   constructor(
     @InjectModel(CheckIn.name)
     private readonly checkInModel: Model<CheckInDocument>,
+    @Inject(forwardRef(() => ParticipacionesService))
     private readonly participacionesService: ParticipacionesService,
+    @Inject(forwardRef(() => DesafiosService))
     private readonly desafiosService: DesafiosService,
     private readonly usuariosService: UsuariosService,
     private readonly rachaPuntosService: RachaPuntosService,
@@ -45,6 +42,11 @@ export class GamificacionService {
       ),
       mejorRacha: this.rachaPuntosService.calcularMejorRacha(dias),
     };
+  }
+
+  async obtenerFilasRanking(desafioId: string): Promise<FilaRanking[]> {
+    await this.desafiosService.obtenerDocumentoPorId(desafioId);
+    return this.construirFilasRanking(desafioId);
   }
 
   async obtenerRanking(desafioId: string, usuarioId: string) {

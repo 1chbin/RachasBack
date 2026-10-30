@@ -7,6 +7,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -18,6 +19,7 @@ import { UsuariosService } from '../usuarios/usuarios.service';
 import { EstadoDesafio } from '../common/enums/estado-desafio.enum';
 import { EstadoDesafioService } from '../common/services/estado-desafio.service';
 import { serializarDocumento } from '../common/utils/serializar.util';
+import { obtenerDesafiosRealtimeService } from '../realtime/realtime-lazy.util';
 
 @Injectable()
 export class ParticipacionesService {
@@ -28,6 +30,7 @@ export class ParticipacionesService {
     private readonly desafiosService: DesafiosService,
     private readonly usuariosService: UsuariosService,
     private readonly estadoDesafioService: EstadoDesafioService,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   async registrarCreador(desafioId: Types.ObjectId, usuarioId: string) {
@@ -86,6 +89,14 @@ export class ParticipacionesService {
       usuarioId: new Types.ObjectId(usuarioId),
     });
 
+    const usuario = await this.usuariosService.obtenerDocumentoPorId(usuarioId);
+    const desafioId = desafio._id.toString();
+    const realtime = obtenerDesafiosRealtimeService(this.moduleRef);
+    await realtime.emitirParticipanteUnido(desafioId, {
+      usuarioId,
+      alias: usuario.alias,
+    });
+
     return {
       participacion: serializarDocumento(participacion),
       desafio: await this.desafiosService.obtenerPorId(
@@ -122,6 +133,13 @@ export class ParticipacionesService {
 
     participacion.abandonadoEn = new Date();
     await participacion.save();
+
+    const usuario = await this.usuariosService.obtenerDocumentoPorId(usuarioId);
+    const realtime = obtenerDesafiosRealtimeService(this.moduleRef);
+    await realtime.emitirParticipanteAbandono(desafioId, {
+      usuarioId,
+      alias: usuario.alias,
+    });
 
     return { mensaje: 'Abandonaste el desafío correctamente' };
   }

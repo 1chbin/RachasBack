@@ -9,6 +9,7 @@ import { CheckInsModule } from './check-ins/check-ins.module';
 import { GamificacionModule } from './gamificacion/gamificacion.module';
 import { SeedModule } from './seed/seed.module';
 import { AuthModule } from './auth/auth.module';
+import { RealtimeModule } from './realtime/realtime.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { AuthModule } from './auth/auth.module';
     ParticipacionesModule,
     CheckInsModule,
     GamificacionModule,
+    RealtimeModule,
     SeedModule,
   ],
 })

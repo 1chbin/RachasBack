@@ -7,7 +7,6 @@ import {
 import { ParticipacionesService } from './participaciones.service';
 import { DesafiosModule } from '../desafios/desafios.module';
 import { UsuariosModule } from '../usuarios/usuarios.module';
-
 @Module({
   imports: [
     MongooseModule.forFeature([

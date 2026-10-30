@@ -6,7 +6,6 @@ import { CheckInsController } from './check-ins.controller';
 import { DesafiosModule } from '../desafios/desafios.module';
 import { ParticipacionesModule } from '../participaciones/participaciones.module';
 import { UsuariosModule } from '../usuarios/usuarios.module';
-
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: CheckIn.name, schema: CheckInSchema }]),

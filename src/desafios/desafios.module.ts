@@ -6,7 +6,6 @@ import { DesafiosController } from './desafios.controller';
 import { ParticipacionesModule } from '../participaciones/participaciones.module';
 import { UsuariosModule } from '../usuarios/usuarios.module';
 import { GamificacionModule } from '../gamificacion/gamificacion.module';
-
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Desafio.name, schema: DesafioSchema }]),

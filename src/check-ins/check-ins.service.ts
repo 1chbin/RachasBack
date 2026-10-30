@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CheckIn, CheckInDocument } from './schemas/check-in.schema';
@@ -23,6 +24,7 @@ import { lanzarSiDuplicado } from '../common/utils/errores-mongo.util';
 import { RachaPuntosService } from '../common/services/racha-puntos.service';
 import { PaginacionQueryDto } from '../common/dto/paginacion-query.dto';
 import { paginarArray } from '../common/utils/paginacion.util';
+import { obtenerDesafiosRealtimeService } from '../realtime/realtime-lazy.util';
 
 @Injectable()
 export class CheckInsService {
@@ -33,6 +35,7 @@ export class CheckInsService {
     private readonly participacionesService: ParticipacionesService,
     private readonly usuariosService: UsuariosService,
     private readonly rachaPuntosService: RachaPuntosService,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   async registrar(desafioId: string, usuarioId: string, dto: CrearCheckInDto) {
@@ -94,7 +97,14 @@ export class CheckInsService {
         zonaHorariaUsada: usuario.zonaHoraria,
         puntos,
       });
-      return serializarDocumento(checkIn);
+      const serializado = serializarDocumento(checkIn);
+      const realtime = obtenerDesafiosRealtimeService(this.moduleRef);
+      await realtime.emitirCheckInRegistrado(desafioId, {
+        checkIn: serializado,
+        usuarioId,
+        alias: usuario.alias,
+      });
+      return serializado;
     } catch (error) {
       lanzarSiDuplicado(
         error,
@@ -135,7 +145,13 @@ export class CheckInsService {
       );
     }
 
+    const diaDeshecho = ultimo.dia;
     await ultimo.deleteOne();
+    const realtime = obtenerDesafiosRealtimeService(this.moduleRef);
+    await realtime.emitirCheckInDeshecho(desafioId, {
+      usuarioId,
+      dia: diaDeshecho,
+    });
     return { mensaje: 'Check-in deshecho correctamente' };
   }
 

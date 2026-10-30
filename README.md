@@ -129,4 +129,41 @@ Orden de validación en services: formato (400) → existencia (404) → permiso
 
 Usá [rachas.http](./rachas.http) con la extensión REST Client de VS Code/Cursor, o importá [rachas.postman_collection.json](./rachas.postman_collection.json) en Postman (carpeta **Flujo completo** en orden).
 
-Autenticación real y WebSockets en la Parte III.
+## Parte III — WebSockets (Socket.IO)
+
+Mismo host y puerto que la API HTTP. La conexión envía el Firebase ID token en el handshake:
+
+```json
+{ "auth": { "token": "<Firebase ID token>" } }
+```
+
+También se acepta `Authorization: Bearer …` en los headers del handshake.
+
+### Cliente → servidor
+
+| Evento | Payload | Respuesta (ack) |
+|--------|---------|-----------------|
+| `desafio:suscribir` | `{ "desafioId": string }` | `{ "ok": true }` o `{ "ok": false, "message": string }` si no participás |
+| `desafio:desuscribir` | `{ "desafioId": string }` | `{ "ok": true }` |
+
+Tras suscribirte, el socket entra en la sala `desafio:<desafioId>`.
+
+### Servidor → sala (participantes suscriptos)
+
+| Evento | Cuándo se emite | Payload |
+|--------|-----------------|---------|
+| `checkin:registrado` | Check-in persistido | `{ desafioId, checkIn, usuarioId, alias }` |
+| `checkin:deshecho` | Último check-in deshecho | `{ desafioId, usuarioId, dia }` |
+| `ranking:actualizado` | Tras check-in, deshacer, unirse o abandonar | `{ desafioId, ranking: FilaRanking[] }` |
+| `participante:unido` | Unión con código | `{ desafioId, usuarioId, alias }` |
+| `participante:abandono` | Abandono | `{ desafioId, usuarioId, alias }` |
+| `desafio:cancelado` | Cancelación por creador | `{ desafioId, estado: "CANCELADO" }` |
+
+Los eventos se emiten **después** de persistir en MongoDB. Si un cliente pierde la conexión, debe volver a `desafio:suscribir` y refrescar el estado por HTTP (la app no reenvía eventos históricos).
+
+### Prueba manual (tiempo real)
+
+1. Dos sesiones (dos navegadores, emulador + web, etc.) con usuarios distintos en el **mismo desafío**.
+2. Abrí el detalle del desafío en ambas.
+3. Registrá un check-in en una → en la otra el ranking se reordena sin pull-to-refresh y aparece un aviso breve.
+4. Cortá la red o matá la app, volvé → datos consistentes tras reconexión y refetch.

@@ -7,6 +7,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Desafio, DesafioDocument } from './schemas/desafio.schema';
@@ -27,6 +28,7 @@ import { lanzarSiDuplicado } from '../common/utils/errores-mongo.util';
 import { paginarArray } from '../common/utils/paginacion.util';
 import { ParticipacionesService } from '../participaciones/participaciones.service';
 import { UsuariosService } from '../usuarios/usuarios.service';
+import { obtenerDesafiosRealtimeService } from '../realtime/realtime-lazy.util';
 
 @Injectable()
 export class DesafiosService {
@@ -38,6 +40,7 @@ export class DesafiosService {
     @Inject(forwardRef(() => ParticipacionesService))
     private readonly participacionesService: ParticipacionesService,
     private readonly usuariosService: UsuariosService,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   obtenerEstadoDeDocumento(desafio: DesafioDocument): EstadoDesafio {
@@ -294,6 +297,8 @@ export class DesafiosService {
 
     desafio.cancelado = true;
     await desafio.save();
+    const realtime = obtenerDesafiosRealtimeService(this.moduleRef);
+    realtime.emitirDesafioCancelado(id);
     return this.presentarDetalleParticipante(desafio);
   }
 
