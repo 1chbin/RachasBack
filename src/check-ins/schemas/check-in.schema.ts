@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { PuntosCheckIn, PuntosCheckInSchema } from './puntos-check-in.schema';
 
 export type CheckInDocument = HydratedDocument<CheckIn>;
 
@@ -26,8 +27,8 @@ export class CheckIn {
   @Prop({ required: true })
   zonaHorariaUsada: string;
 
-  @Prop({ required: true, min: 10 })
-  puntos: number;
+  @Prop({ type: PuntosCheckInSchema, required: true })
+  puntos: PuntosCheckIn;
 }
 
 export const CheckInSchema = SchemaFactory.createForClass(CheckIn);

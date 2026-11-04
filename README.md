@@ -11,7 +11,8 @@ API REST en **NestJS** con persistencia en **MongoDB Atlas** para el trabajo pr�
 
 1. Copiá `.env.example` a `.env`.
 2. Completá `MONGODB_URI` con tu cadena de Atlas, incluyendo el nombre de la base (por ejemplo `...mongodb.net/rachas`).
-3. Opcional: `PORT` (por defecto `3000`).
+3. **Atlas → Network Access:** agregá tu **IP pública actual** (o `0.0.0.0/0` solo en dev). Sin esto el back puede escuchar en `:3000` pero `/health` y la API fallan con MongoDB desconectado (SSL / server selection en la terminal).
+4. Opcional: `PORT` (por defecto `3000`).
 
 **No subas `.env` al repositorio.**
 
@@ -174,3 +175,17 @@ Los alientos **no se guardan** en la base: son señales en tiempo real para moti
 3. Registrá un check-in en una → en la otra el ranking se reordena sin pull-to-refresh y aparece un aviso breve.
 4. Cortá la red o matá la app, volvé → datos consistentes tras reconexión y refetch.
 5. **Alientos:** con el detalle abierto en ambos, A elige emoji para B en el ranking → B ve el banner efímero; segundo envío en menos de 10 s → error en ack.
+
+---
+
+## Parte IV — Versionado, analytics y monitoreo
+
+- Rutas **`/v1/...`** (adaptadores JSON legacy + headers `Deprecation` / `Sunset`) y **`/v2/...`** (contrato actual: `finalizaEn`, `puntos` objeto, `PAUSADO`, check-in con `zonaHoraria`).
+- Público: `GET /health` (Terminus + Mongo), `GET /version-policy`.
+- Headers de app: `x-app-version`, `x-platform`, `x-request-id`; respuesta **426** si la versión es menor a `MIN_APP_VERSION`.
+- Analytics: `POST /v2/analytics/events` (lotes, TTL 30 días), `POST /analytics/client-errors` (público).
+- Logs HTTP en JSON (middleware `HttpRequest`).
+
+Variables: ver `.env.example` (`MIN_APP_VERSION`, `RECOMMENDED_APP_VERSION`, `V1_SUNSET_DATE`).
+
+Documentación: [`../docs/`](../docs/) y [`../README.md`](../README.md).

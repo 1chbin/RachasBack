@@ -1,3 +1,4 @@
+# @baseUrl debe coincidir con PORT en RachasBack/.env (default 3000)
 @baseUrl = http://localhost:3000
 # Pegá un Firebase ID token (después de login en la app o consola Firebase):
 @firebaseToken = eyJhbGciOiJSUzI1NiIs...

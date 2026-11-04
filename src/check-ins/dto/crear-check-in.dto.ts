@@ -7,6 +7,10 @@ export class CrearCheckInDto {
   })
   dia: string;
 
+  @IsString()
+  @Length(3, 64)
+  zonaHoraria: string;
+
   @IsOptional()
   @IsString()
   @Length(0, 140)

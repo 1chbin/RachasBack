@@ -15,5 +15,6 @@ import { UsuariosModule } from '../usuarios/usuarios.module';
   ],
   controllers: [CheckInsController],
   providers: [CheckInsService],
+  exports: [CheckInsService],
 })
 export class CheckInsModule {}

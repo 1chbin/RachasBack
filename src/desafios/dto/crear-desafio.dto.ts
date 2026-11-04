@@ -31,9 +31,9 @@ export class CrearDesafioDto {
 
   @IsString()
   @Matches(/^\d{4}-\d{2}-\d{2}$/, {
-    message: 'fechaFin debe tener formato YYYY-MM-DD',
+    message: 'finalizaEn debe tener formato YYYY-MM-DD',
   })
-  fechaFin: string;
+  finalizaEn: string;
 
   @IsOptional()
   @IsInt()

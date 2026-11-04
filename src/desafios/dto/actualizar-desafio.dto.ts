@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsInt,
   IsOptional,
   IsString,
@@ -27,7 +28,11 @@ export class ActualizarDesafioDto {
   @IsOptional()
   @IsString()
   @Matches(/^\d{4}-\d{2}-\d{2}$/)
-  fechaFin?: string;
+  finalizaEn?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  pausado?: boolean;
 
   @IsOptional()
   @IsInt()

@@ -19,10 +19,13 @@ export class Desafio {
   fechaInicio: string;
 
   @Prop({ required: true })
-  fechaFin: string;
+  finalizaEn: string;
 
   @Prop({ required: true, default: 10, min: 2, max: 20 })
   maxParticipantes: number;
+
+  @Prop({ required: true, default: false })
+  pausado: boolean;
 
   @Prop({ required: true, unique: true, uppercase: true })
   codigoInvitacion: string;

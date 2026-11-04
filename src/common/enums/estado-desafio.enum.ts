@@ -1,6 +1,7 @@
 export enum EstadoDesafio {
   PROGRAMADO = 'PROGRAMADO',
   ACTIVO = 'ACTIVO',
+  PAUSADO = 'PAUSADO',
   FINALIZADO = 'FINALIZADO',
   CANCELADO = 'CANCELADO',
 }

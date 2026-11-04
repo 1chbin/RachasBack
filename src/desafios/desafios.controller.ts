@@ -17,7 +17,7 @@ import { OptionalUsuarioId } from '../common/decorators/optional-usuario-id.deco
 import { ParticipacionesService } from '../participaciones/participaciones.service';
 import { GamificacionService } from '../gamificacion/gamificacion.service';
 
-@Controller('desafios')
+@Controller({ path: 'desafios', version: '2' })
 export class DesafiosController {
   constructor(
     private readonly desafiosService: DesafiosService,

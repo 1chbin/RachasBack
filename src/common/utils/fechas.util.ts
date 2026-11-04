@@ -24,3 +24,15 @@ export function esFechaCalendarioValida(valor: string): boolean {
   const fecha = parseISO(valor);
   return formatInTimeZone(fecha, 'UTC', 'yyyy-MM-dd') === valor;
 }
+
+export function esZonaHorariaIanaValida(zonaHoraria: string): boolean {
+  if (!zonaHoraria?.trim()) {
+    return false;
+  }
+  try {
+    formatInTimeZone(new Date(), zonaHoraria.trim(), 'yyyy-MM-dd');
+    return true;
+  } catch {
+    return false;
+  }
+}

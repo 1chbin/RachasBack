@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CommonModule } from './common/common.module';
@@ -10,6 +10,10 @@ import { GamificacionModule } from './gamificacion/gamificacion.module';
 import { SeedModule } from './seed/seed.module';
 import { AuthModule } from './auth/auth.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { VersioningModule } from './versioning/versioning.module';
+import { HealthModule } from './health/health.module';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { RequestLoggingMiddleware } from './common/middleware/request-logging.middleware';
 
 @Module({
   imports: [
@@ -19,6 +23,16 @@ import { RealtimeModule } from './realtime/realtime.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         uri: configService.getOrThrow<string>('MONGODB_URI'),
+        lazyConnection: true,
+        serverSelectionTimeoutMS: 10_000,
+        onConnectionCreate: (connection) => {
+          connection.on('error', (error: Error) => {
+            console.error(
+              '[MongoDB] Error de conexión. Revisá Atlas → Network Access (IP actual) y MONGODB_URI:',
+              error.message,
+            );
+          });
+        },
       }),
     }),
     CommonModule,
@@ -28,7 +42,14 @@ import { RealtimeModule } from './realtime/realtime.module';
     CheckInsModule,
     GamificacionModule,
     RealtimeModule,
+    VersioningModule,
+    HealthModule,
+    AnalyticsModule,
     SeedModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestLoggingMiddleware).forRoutes('*');
+  }
+}

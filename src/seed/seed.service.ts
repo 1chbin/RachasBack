@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
+import { Connection, Model } from 'mongoose';
 import { Usuario, UsuarioDocument } from '../usuarios/schemas/usuario.schema';
 import { Desafio, DesafioDocument } from '../desafios/schemas/desafio.schema';
 import {
@@ -22,6 +22,7 @@ export class SeedService implements OnModuleInit {
   private readonly logger = new Logger(SeedService.name);
 
   constructor(
+    @InjectConnection() private readonly connection: Connection,
     @InjectModel(SeedMetadata.name)
     private readonly seedMetadataModel: Model<SeedMetadataDocument>,
     @InjectModel(Usuario.name)
@@ -33,6 +34,25 @@ export class SeedService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    const run = () =>
+      this.runSeedIfNeeded().catch((error) => {
+        this.logger.warn(
+          'Seed omitido: MongoDB no disponible aún. Revisá Atlas Network Access y MONGODB_URI.',
+          error instanceof Error ? error.message : error,
+        );
+      });
+
+    if (this.connection.readyState === 1) {
+      await run();
+      return;
+    }
+
+    this.connection.once('connected', () => {
+      void run();
+    });
+  }
+
+  private async runSeedIfNeeded() {
     const existente = await this.seedMetadataModel.findOne({ clave: CLAVE_SEED });
     if (existente) {
       return;
@@ -74,7 +94,7 @@ export class SeedService implements OnModuleInit {
         descripcion: 'Salir a correr al menos 30 minutos.',
         categoria: CategoriaDesafio.SALUD,
         fechaInicio: enUnDia,
-        fechaFin: enQuinceDias,
+        finalizaEn: enQuinceDias,
         maxParticipantes: 10,
         codigoInvitacion: 'RACH01',
         creadorId: lucia._id,
@@ -84,7 +104,7 @@ export class SeedService implements OnModuleInit {
         nombre: 'Una hora de estudio diaria',
         categoria: CategoriaDesafio.ESTUDIO,
         fechaInicio: enTresDias,
-        fechaFin: enDiezDias,
+        finalizaEn: enDiezDias,
         maxParticipantes: 5,
         codigoInvitacion: 'ESTU02',
         creadorId: martin._id,

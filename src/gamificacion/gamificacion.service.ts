@@ -190,7 +190,18 @@ export class GamificacionService {
           usuarioId: new Types.ObjectId(usuarioId),
         },
       },
-      { $group: { _id: null, total: { $sum: '$puntos' } } },
+      {
+        $addFields: {
+          puntosTotal: {
+            $cond: [
+              { $eq: [{ $type: '$puntos' }, 'object'] },
+              '$puntos.total',
+              '$puntos',
+            ],
+          },
+        },
+      },
+      { $group: { _id: null, total: { $sum: '$puntosTotal' } } },
     ]);
     return resultado[0]?.total ?? 0;
   }
@@ -203,7 +214,18 @@ export class GamificacionService {
       total: number;
     }>([
       { $match: { desafioId: new Types.ObjectId(desafioId) } },
-      { $group: { _id: '$usuarioId', total: { $sum: '$puntos' } } },
+      {
+        $addFields: {
+          puntosTotal: {
+            $cond: [
+              { $eq: [{ $type: '$puntos' }, 'object'] },
+              '$puntos.total',
+              '$puntos',
+            ],
+          },
+        },
+      },
+      { $group: { _id: '$usuarioId', total: { $sum: '$puntosTotal' } } },
     ]);
 
     const mapa = new Map<string, number>();

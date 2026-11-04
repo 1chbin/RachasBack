@@ -7,7 +7,7 @@ import { DesafiosService } from '../desafios/desafios.service';
 import { GamificacionService } from '../gamificacion/gamificacion.service';
 import { AuthUsuarioService } from '../auth/auth-usuario.service';
 
-@Controller('usuarios')
+@Controller({ path: 'usuarios', version: '2' })
 export class UsuariosController {
   constructor(
     private readonly usuariosService: UsuariosService,

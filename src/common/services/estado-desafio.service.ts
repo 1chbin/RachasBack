@@ -6,7 +6,8 @@ import { obtenerFechaCalendarioHoy } from '../utils/fechas.util';
 export interface DesafioParaEstado {
   cancelado: boolean;
   fechaInicio: string;
-  fechaFin: string;
+  finalizaEn: string;
+  pausado?: boolean;
 }
 
 @Injectable()
@@ -24,15 +25,20 @@ export class EstadoDesafioService {
     if (hoy < desafio.fechaInicio) {
       return EstadoDesafio.PROGRAMADO;
     }
-    if (hoy > desafio.fechaFin) {
+    if (hoy > desafio.finalizaEn) {
       return EstadoDesafio.FINALIZADO;
+    }
+    if (desafio.pausado) {
+      return EstadoDesafio.PAUSADO;
     }
     return EstadoDesafio.ACTIVO;
   }
 
   esVigente(estado: EstadoDesafio): boolean {
     return (
-      estado === EstadoDesafio.PROGRAMADO || estado === EstadoDesafio.ACTIVO
+      estado === EstadoDesafio.PROGRAMADO ||
+      estado === EstadoDesafio.ACTIVO ||
+      estado === EstadoDesafio.PAUSADO
     );
   }
 

@@ -10,12 +10,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CheckIn, CheckInDocument } from './schemas/check-in.schema';
 import { CrearCheckInDto } from './dto/crear-check-in.dto';
+import { CrearCheckInV1Dto } from './dto/crear-check-in-v1.dto';
 import { DesafiosService } from '../desafios/desafios.service';
 import { ParticipacionesService } from '../participaciones/participaciones.service';
 import { UsuariosService } from '../usuarios/usuarios.service';
 import { EstadoDesafio } from '../common/enums/estado-desafio.enum';
 import {
   esFechaCalendarioValida,
+  esZonaHorariaIanaValida,
   obtenerFechaCalendarioAyer,
   obtenerFechaCalendarioHoy,
 } from '../common/utils/fechas.util';
@@ -39,14 +41,37 @@ export class CheckInsService {
   ) {}
 
   async registrar(desafioId: string, usuarioId: string, dto: CrearCheckInDto) {
+    return this.registrarInternal(desafioId, usuarioId, dto);
+  }
+
+  async registrarV1(desafioId: string, usuarioId: string, dto: CrearCheckInV1Dto) {
+    const usuario = await this.usuariosService.obtenerDocumentoPorId(usuarioId);
+    return this.registrarInternal(desafioId, usuarioId, {
+      ...dto,
+      zonaHoraria: usuario.zonaHoraria,
+    });
+  }
+
+  private async registrarInternal(
+    desafioId: string,
+    usuarioId: string,
+    dto: CrearCheckInDto,
+  ) {
     const usuario = await this.usuariosService.obtenerDocumentoPorId(usuarioId);
     const desafio = await this.desafiosService.obtenerDocumentoPorId(desafioId);
     const estado = this.desafiosService.obtenerEstadoDeDocumento(desafio);
 
     if (estado !== EstadoDesafio.ACTIVO) {
       throw new ConflictException(
-        'Solo podés registrar check-ins en desafíos activos',
+        estado === EstadoDesafio.PAUSADO
+          ? 'No podés registrar check-ins mientras el desafío está pausado'
+          : 'Solo podés registrar check-ins en desafíos activos',
       );
+    }
+
+    const zonaHoraria = dto.zonaHoraria.trim();
+    if (!esZonaHorariaIanaValida(zonaHoraria)) {
+      throw new BadRequestException('zonaHoraria debe ser un identificador IANA válido');
     }
 
     const participacion =
@@ -62,8 +87,8 @@ export class CheckInsService {
       throw new BadRequestException('El día del check-in no es válido');
     }
 
-    const hoy = obtenerFechaCalendarioHoy(usuario.zonaHoraria);
-    const ayer = obtenerFechaCalendarioAyer(usuario.zonaHoraria);
+    const hoy = obtenerFechaCalendarioHoy(zonaHoraria);
+    const ayer = obtenerFechaCalendarioAyer(zonaHoraria);
 
     if (dto.dia !== hoy && dto.dia !== ayer) {
       throw new BadRequestException(
@@ -71,7 +96,7 @@ export class CheckInsService {
       );
     }
 
-    if (dto.dia < desafio.fechaInicio || dto.dia > desafio.fechaFin) {
+    if (dto.dia < desafio.fechaInicio || dto.dia > desafio.finalizaEn) {
       throw new BadRequestException(
         'El día del check-in debe estar dentro del rango del desafío',
       );
@@ -83,7 +108,7 @@ export class CheckInsService {
       diasConNuevo,
       dto.dia,
     );
-    const puntos = this.rachaPuntosService.calcularPuntosCheckIn(
+    const puntos = this.rachaPuntosService.calcularDesglosePuntosCheckIn(
       rachaIncluyendoDia,
     );
 
@@ -94,7 +119,7 @@ export class CheckInsService {
         dia: dto.dia,
         nota: dto.nota?.trim(),
         valor: dto.valor,
-        zonaHorariaUsada: usuario.zonaHoraria,
+        zonaHorariaUsada: zonaHoraria,
         puntos,
       });
       const serializado = serializarDocumento(checkIn);

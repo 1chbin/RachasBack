@@ -12,7 +12,7 @@ import { CrearCheckInDto } from './dto/crear-check-in.dto';
 import { ListarCheckInsQueryDto } from './dto/listar-check-ins-query.dto';
 import { UsuarioId } from '../common/decorators/usuario-id.decorator';
 
-@Controller('desafios/:desafioId/check-ins')
+@Controller({ path: 'desafios/:desafioId/check-ins', version: '2' })
 export class CheckInsController {
   constructor(private readonly checkInsService: CheckInsService) {}
 

@@ -21,6 +21,14 @@ export class RachaPuntosService {
     return 10 + this.calcularBonusRacha(rachaIncluyendoDia);
   }
 
+  calcularDesglosePuntosCheckIn(rachaIncluyendoDia: number): {
+    total: number;
+    bonusPorRacha: number;
+  } {
+    const bonusPorRacha = this.calcularBonusRacha(rachaIncluyendoDia);
+    return { total: 10 + bonusPorRacha, bonusPorRacha };
+  }
+
   calcularRachaEnDia(diasCheckIn: string[], diaReferencia: string): number {
     const dias = new Set(diasCheckIn);
     if (!dias.has(diaReferencia)) {

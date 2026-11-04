@@ -44,11 +44,20 @@ export class DesafiosService {
   ) {}
 
   obtenerEstadoDeDocumento(desafio: DesafioDocument): EstadoDesafio {
+    this.normalizarDesafioLegacy(desafio);
     return this.estadoDesafioService.obtenerEstado({
       cancelado: desafio.cancelado,
       fechaInicio: desafio.fechaInicio,
-      fechaFin: desafio.fechaFin,
+      finalizaEn: desafio.finalizaEn,
+      pausado: desafio.pausado,
     });
+  }
+
+  private normalizarDesafioLegacy(desafio: DesafioDocument): void {
+    const legacy = desafio as DesafioDocument & { fechaFin?: string };
+    if (!desafio.finalizaEn && legacy.fechaFin) {
+      desafio.finalizaEn = legacy.fechaFin;
+    }
   }
 
   presentarResumenPublico(desafio: DesafioDocument) {
@@ -71,18 +80,18 @@ export class DesafiosService {
     };
   }
 
-  private validarFechasDesafio(fechaInicio: string, fechaFin: string) {
-    if (!esFechaCalendarioValida(fechaInicio) || !esFechaCalendarioValida(fechaFin)) {
+  private validarFechasDesafio(fechaInicio: string, finalizaEn: string) {
+    if (!esFechaCalendarioValida(fechaInicio) || !esFechaCalendarioValida(finalizaEn)) {
       throw new BadRequestException('Las fechas deben ser válidas (YYYY-MM-DD)');
     }
 
-    if (fechaFin < fechaInicio) {
+    if (finalizaEn < fechaInicio) {
       throw new BadRequestException(
         'La fecha de fin no puede ser anterior a la de inicio',
       );
     }
 
-    const duracion = diasInclusive(fechaInicio, fechaFin);
+    const duracion = diasInclusive(fechaInicio, finalizaEn);
     if (duracion < 3 || duracion > 90) {
       throw new BadRequestException(
         'El desafío debe durar entre 3 y 90 días inclusive',
@@ -99,7 +108,7 @@ export class DesafiosService {
 
   async crear(dto: CrearDesafioDto, creadorId: string) {
     await this.usuariosService.obtenerDocumentoPorId(creadorId);
-    this.validarFechasDesafio(dto.fechaInicio, dto.fechaFin);
+    this.validarFechasDesafio(dto.fechaInicio, dto.finalizaEn);
 
     const vigentes = await this.contarDesafiosVigentesDeUsuario(creadorId);
     if (vigentes >= 5) {
@@ -116,8 +125,9 @@ export class DesafiosService {
           descripcion: dto.descripcion?.trim(),
           categoria: dto.categoria,
           fechaInicio: dto.fechaInicio,
-          fechaFin: dto.fechaFin,
+          finalizaEn: dto.finalizaEn,
           maxParticipantes: dto.maxParticipantes ?? 10,
+          pausado: false,
           codigoInvitacion: this.codigoInvitacionService.generar(),
           creadorId: new Types.ObjectId(creadorId),
         });
@@ -244,17 +254,29 @@ export class DesafiosService {
     }
 
     const fechaInicio = dto.fechaInicio ?? desafio.fechaInicio;
-    const fechaFin = dto.fechaFin ?? desafio.fechaFin;
+    const finalizaEn = dto.finalizaEn ?? desafio.finalizaEn;
 
-    if (dto.fechaInicio !== undefined || dto.fechaFin !== undefined) {
+    if (dto.fechaInicio !== undefined || dto.finalizaEn !== undefined) {
       if (estado !== EstadoDesafio.PROGRAMADO) {
         throw new ConflictException(
           'Las fechas solo se pueden modificar mientras el desafío está programado',
         );
       }
-      this.validarFechasDesafio(fechaInicio, fechaFin);
+      this.validarFechasDesafio(fechaInicio, finalizaEn);
       desafio.fechaInicio = fechaInicio;
-      desafio.fechaFin = fechaFin;
+      desafio.finalizaEn = finalizaEn;
+    }
+
+    if (dto.pausado !== undefined) {
+      if (
+        estado !== EstadoDesafio.ACTIVO &&
+        estado !== EstadoDesafio.PAUSADO
+      ) {
+        throw new ConflictException(
+          'Solo podés pausar o reanudar un desafío activo o pausado',
+        );
+      }
+      desafio.pausado = dto.pausado;
     }
 
     if (dto.maxParticipantes !== undefined) {
@@ -288,7 +310,8 @@ export class DesafiosService {
 
     if (
       estado !== EstadoDesafio.PROGRAMADO &&
-      estado !== EstadoDesafio.ACTIVO
+      estado !== EstadoDesafio.ACTIVO &&
+      estado !== EstadoDesafio.PAUSADO
     ) {
       throw new ConflictException(
         'Solo se pueden cancelar desafíos programados o activos',
