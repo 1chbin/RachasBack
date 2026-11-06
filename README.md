@@ -183,7 +183,7 @@ Los alientos **no se guardan** en la base: son señales en tiempo real para moti
 - Rutas **`/v1/...`** (adaptadores JSON legacy + headers `Deprecation` / `Sunset`) y **`/v2/...`** (contrato actual: `finalizaEn`, `puntos` objeto, `PAUSADO`, check-in con `zonaHoraria`).
 - Público: `GET /health` (Terminus + Mongo), `GET /version-policy`.
 - Headers de app: `x-app-version`, `x-platform`, `x-request-id`; respuesta **426** si la versión es menor a `MIN_APP_VERSION`.
-- Analytics: `POST /v2/analytics/events` (lotes, TTL 30 días), `POST /analytics/client-errors` (público).
+- Analytics: `POST /v2/analytics/events` (lotes, TTL 30 días), `POST /v2/analytics/client-errors` (público), reportes `GET /v2/analytics/reportes/personas-activas-por-dia`, `GET /v2/analytics/reportes/embudo-ingreso-desafio-checkin`, `GET /v2/analytics/reportes/checkins-por-version-app`.
 - Logs HTTP en JSON (middleware `HttpRequest`).
 
 Variables: ver `.env.example` (`MIN_APP_VERSION`, `RECOMMENDED_APP_VERSION`, `V1_SUNSET_DATE`).

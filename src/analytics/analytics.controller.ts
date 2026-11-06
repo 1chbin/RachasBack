@@ -39,4 +39,14 @@ export class AnalyticsController {
   personasActivasPorDia() {
     return this.analyticsService.personasActivasPorDia();
   }
+
+  @Get('reportes/embudo-ingreso-desafio-checkin')
+  embudoIngresoDesafioCheckin() {
+    return this.analyticsService.embudoIngresoDesafioCheckin();
+  }
+
+  @Get('reportes/checkins-por-version-app')
+  checkinsPorVersionApp() {
+    return this.analyticsService.checkinsPorVersionApp();
+  }
 }
