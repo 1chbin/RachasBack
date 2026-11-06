@@ -4,7 +4,7 @@ import {
   HealthIndicatorResult,
 } from '@nestjs/terminus';
 import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { Connection, ConnectionStates } from 'mongoose';
 
 @Injectable()
 export class MongoHealthIndicator {
@@ -15,16 +15,9 @@ export class MongoHealthIndicator {
 
   async isHealthy(key: string): Promise<HealthIndicatorResult> {
     const indicator = this.healthIndicatorService.check(key);
-    try {
-      if (this.connection.readyState !== 1) {
-        return indicator.down({ message: 'MongoDB desconectado' });
-      }
-      await this.connection.db?.admin().ping();
-      return indicator.up();
-    } catch (error) {
-      return indicator.down({
-        message: error instanceof Error ? error.message : 'Error de MongoDB',
-      });
+    if (this.connection.readyState !== ConnectionStates.connected) {
+      return indicator.down({ message: 'MongoDB desconectado' });
     }
+    return indicator.up();
   }
 }
